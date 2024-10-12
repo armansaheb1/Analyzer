@@ -50,7 +50,7 @@ class NewsIntrest(models.Model):
 
 class NewsReport(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True)
-    title = models.CharField(max_length=90)
-    text = models.CharField(max_length=1000)
-    pic = models.CharField(max_length=1000)
-    subject = models.CharField(max_length=100)
+    title = models.CharField(max_length=90, null=True)
+    text = models.CharField(max_length=1000, null=True)
+    pic = models.CharField(max_length=1000, null=True)
+    subject = models.CharField(max_length=100, null=True)

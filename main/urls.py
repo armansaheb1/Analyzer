@@ -21,6 +21,7 @@ from . import views
 
 urlpatterns = [
     path("services", views.Services.as_view()),
+    path("reports", views.Reports.as_view()),
     path("categories", views.Categories.as_view()),
     path("services/<slug>", views.ServicesOne.as_view()),
     path("gbuilder/<slug>", views.GBuilder.as_view()),

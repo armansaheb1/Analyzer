@@ -39,6 +39,13 @@ class Services(APIView):
         return Response(serializer.data)
 
 
+class Reports(APIView):
+    def get(self, request):
+        query = models.NewsReport.objects.all()
+        serializer = serializers.NewsReportSerializer(query, many=True)
+        return Response(serializer.data)
+
+
 class GBuilder(APIView):
     authentication_classes = [
         SessionAuthentication,

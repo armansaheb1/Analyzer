@@ -14,3 +14,10 @@ class CategorySerializer(serializers.ModelSerializer):
         depth = 2
         model = models.Category
         fields = ("id", "name", "icon", "services")
+
+
+class NewsReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        depth = 2
+        model = models.NewsReport
+        fields = "__all__"
