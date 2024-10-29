@@ -27,9 +27,9 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.llms.openai import OpenAI
 from llama_index.core import Settings
+from Analyzer import settings
 
-
-genai.configure(api_key = "AIzaSyDac_fTwNfHPfAlaHoD4LhEP0F_7oeAEpA")
+genai.configure(api_key = settings.GEMINI_KEY)
 
 model = genai.GenerativeModel("gemini-1.5-flash")
 
