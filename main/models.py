@@ -21,7 +21,16 @@ class CustomUser(AbstractUser):
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
-    icon = models.CharField(max_length=20)
+
+class StaticEntry(models.Model):
+    name = models.CharField(max_length=90, null=True)
+    options = models.JSONField()
+    prompt = models.TextField(null=True)
+
+class IdeaStaticEntry(models.Model):
+    name = models.CharField(max_length=90, null=True)
+    options = models.JSONField()
+    prompt = models.TextField(null=True)
 
 
 class Service(models.Model):
@@ -30,22 +39,40 @@ class Service(models.Model):
     prompt = models.TextField(null=True)
     description = models.CharField(max_length=1000)
     variables = models.JSONField()
+    static_variables = models.ManyToManyField(StaticEntry)
     price = models.IntegerField()
-    icon = models.CharField(null=True, max_length=20)
+    icon = models.CharField(null=True, max_length=50)
+    icon_image =models.ImageField(upload_to='icons', null=True)
+    button_name=models.CharField(max_length=100, null=True)
+    highlight=models.CharField(max_length=100, null=True)
     color = models.CharField(null=True, max_length=6)
     category = models.ForeignKey(
         Category, related_name="services", on_delete=models.CASCADE
     )
 
 
+class NewsService(models.Model):
+    name = models.CharField(max_length=100)
+    prompt = models.TextField(null=True)
+    description = models.CharField(max_length=1000)
+    price = models.IntegerField()
+
+
 class NewsSite(models.Model):
-    name = models.CharField(max_length=30)
+    name = models.CharField(max_length=100)
     url = models.URLField()
 
 
 class NewsIntrest(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     subject = models.CharField(max_length=100)
+
+class SocialIntrest(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    subject = models.CharField(max_length=100)
+    twitter = models.BooleanField(null=True)
+    telegram = models.BooleanField(null=True)
+    channels = models.JSONField()
 
 
 class NewsReport(models.Model):
@@ -54,3 +81,14 @@ class NewsReport(models.Model):
     text = models.CharField(max_length=1000, null=True)
     pic = models.CharField(max_length=1000, null=True)
     subject = models.CharField(max_length=100, null=True)
+    resource = models.CharField(max_length=100, null=True)
+
+
+class Tone(models.Model):
+    name = models.CharField(max_length=90, null=True)
+
+
+class Format(models.Model):
+    name = models.CharField(max_length=90, null=True)
+
+

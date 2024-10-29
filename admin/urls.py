@@ -21,4 +21,12 @@ from . import views
 
 urlpatterns = [
     path("services", views.Services.as_view()),
+    path("services/<id>", views.Services.as_view()),
+    path("tones", views.Tones.as_view()),
+    path("tones/<id>", views.Tones.as_view()),
+    path("formats", views.Formats.as_view()),
+    path("formats/<id>", views.Formats.as_view()),
+    path("categories", views.Categories.as_view()),
+    path("categories/<id>", views.Categories.as_view()),
+    path("news-services", views.NewsServices.as_view()),
 ]
