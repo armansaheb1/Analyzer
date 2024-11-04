@@ -1,9 +1,22 @@
 from pathlib import Path
 import os
+import environ
+My_MEDIA_ROOT="http://217.69.3.68"
+env = environ.Env(
+    # set casting, default value
+    DEBUG=(bool, False)
+)
+
 os.environ['USER_AGENT'] = 'myagent'
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-59h$%^@@kb!_8)_tzz=vy4x5rrzf*on@)ls*5d=!_3v+p58&p!"
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+OPEN_AI_KEY = env('OPEN_AI')
+GEMINI_KEY = env('GEMINI')
+
+SECRET_KEY = env('SECRET_KEY')
 
 DEBUG = True
 
@@ -91,6 +104,7 @@ USE_TZ = True
 
 
 STATIC_URL = "static/"
+MEDIA_URL = "api/v1/media/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -122,3 +136,4 @@ LOGGING = {
 }
 
 STATIC_ROOT = "/Analyzer/static/"
+MEDIA_ROOT = "/Analyzer/media/"

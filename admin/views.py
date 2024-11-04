@@ -6,7 +6,27 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
+class ServicesOne(APIView):
+    def get(self, request, slug):
+        query = models.Service.objects.get(slug=slug)
+        serializer = serializers.ServiceSerializer(query)
+        return Response(serializer.data)
+    
+    def put(self, request, slug):
+        query = models.Service.objects.get(slug = slug)
+        serializer = serializers.ServiceSerializer(query, data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(
+                category=models.Category.objects.get(id=request.data["category"])
+            )
+        
+        return Response(serializer.data)
+
+
+
 class Services(APIView):
+    
     def get(self, request):
         query = models.Service.objects.all()
         serializer = serializers.ServiceSerializer(query, many=True)
@@ -14,6 +34,7 @@ class Services(APIView):
 
     def post(self, request):
         serializer = serializers.ServiceSerializer(data=request.data)
+
         if serializer.is_valid(raise_exception=True):
             serializer.save(
                 category=models.Category.objects.get(id=request.data["category"])
@@ -21,6 +42,18 @@ class Services(APIView):
         query = models.Service.objects.all()
         serializer = serializers.ServiceSerializer(query, many=True)
         return Response(serializer.data)
+    
+    def put(self, request, slug):
+        query = models.Service.objects.get(slug = slug)
+        serializer = serializers.ServiceSerializer(query, data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(
+                category=models.Category.objects.get(id=request.data["category"])
+            )
+        
+        return Response(serializer.data)
+
     
     def delete(self, request, id):
         query = models.Service.objects.get(id = id)

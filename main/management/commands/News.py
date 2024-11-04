@@ -71,14 +71,15 @@ def get_news_gpt():
                     for itemm in response:
                         if "title" in itemm and "description" in itemm :
                             if len(itemm["description"]) > 80:
+                                if not len(models.NewsReport.objects.filter(title=itemm["title"])):
                         
-                                models.NewsReport.objects.create(
-                                    user= item.user,
-                                    title=itemm["title"],
-                                    text=itemm["description"],
-                                    subject=item.subject,
-                                    resource=itemmm.name
-                            )
+                                    models.NewsReport.objects.create(
+                                        user= item.user,
+                                        title=itemm["title"],
+                                        text=itemm["description"],
+                                        subject=item.subject,
+                                        resource=itemmm.name
+                                )
                                     
                 except:
                     pass
