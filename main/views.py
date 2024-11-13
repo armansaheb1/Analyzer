@@ -251,7 +251,7 @@ class GPTBuilder(APIView):
 
         query = models.Service.objects.get(slug=slug)
         prompt = query.prompt
-        prompt = prompt + '\n پاسخ باید به شکل html باشد'
+        prompt = prompt + '\n return result as only a responsive html text without pictures and code details with maximum header of h4 \n'
         for item in query.static_variables.all():
             if request.data["data2"]['n' + str(item.id)]:
                 prompt = prompt + '\n' + item.prompt.replace('$entry', request.data["data2"]['n' + str(item.id)])
@@ -272,7 +272,7 @@ class GBuilder(APIView):
 
         query = models.Service.objects.get(slug=slug)
         prompt = query.prompt
-        prompt = prompt + '\n پاسخ باید به شکل html باشد'
+        prompt = prompt + '\n return result as only a responsive html text without pictures and code details with maximum header of h4 \n'
         for item in query.static_variables.all():
             if request.data["data2"]['n' + str(item.id)]:
                 prompt = prompt + '\n' + item.prompt.replace('$entry', request.data["data2"]['n' + str(item.id)])
@@ -287,19 +287,19 @@ class GBuilderWrite(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        prompt = f'{request.data["text"]}'
-        if request.data["tone"] or request.data["format"] or request.data["prompt"]:
-            prompt = prompt + 'را با'
-        if request.data["tone"]:
-            prompt = prompt + 'لحن' + request.data["tone"] + ','
-        if request.data["format"]:
-            prompt = prompt + 'فرمت' + request.data["tone"] + ','
-        if request.data["prompt"]:
-            prompt = prompt + '' + request.data["tone"] + ','
-        prompt = prompt + ' با حالت فقط یک اچ تی ام ال و بدون توضیح کد بنویس '
+        import logging
+        logger = logging.getLogger('django')
+        query = models.StaticEntry.objects.all()
+
+        prompt = '\n return result as only a responsive html text without pictures and code details with maximum header of h4 \n'
+        for item in query:
+            if request.data["data2"]['n' + str(item.id)]:
+                prompt = prompt + '\n' + item.prompt.replace('$entry', request.data["data2"]['n' + str(item.id)])
+        prompt = prompt + '\n متن اصلی : \n' + request.data["maintext"]
+        
+        logger.info(prompt)
         response = model.generate_content(prompt)
         return Response(response.text)
-
 
 
 class GBuilderNews(APIView):
@@ -308,12 +308,19 @@ class GBuilderNews(APIView):
     def get(self, request, id, service):
         query = models.NewsReport.objects.get(id=id)
         service = models.NewsService.objects.get(id=service)
-        prompt = 'a brief' + service.prompt
-        prompt = prompt + '\n پاسخ باید به شکل html باشد'
-        prompt = prompt.replace(
-            "$text", f"{query.title} \n {query.text}"
+        text = ''
+        from langchain_community.document_loaders import WebBaseLoader
+
+        loader = WebBaseLoader(
+            web_path = query.link
         )
-        prompt = prompt + 'return result as only a html without pictures'
+        
+        prompt = service.prompt
+        prompt = prompt + '\n Response should be with html text formatting with maximum header of h4'
+        prompt = prompt.replace(
+            "$text", f"content related to {query.title} from  {str(loader.load())}"
+        )
+        prompt = prompt + '\n return result as only a responsive html text without pictures and code details with maximum header of h4 \n'
         response = model.generate_content(prompt)
         return Response(response.text.replace('```html', '').replace('```', ''))
 

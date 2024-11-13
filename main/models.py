@@ -69,6 +69,7 @@ class NewsService(models.Model):
 class ImageService(models.Model):
     name = models.CharField(max_length=100)
     prompt = models.TextField(null=True)
+    description= models.CharField(max_length=150, null=True)
 
 
 class NewsSite(models.Model):
@@ -95,6 +96,7 @@ class NewsReport(models.Model):
     pic = models.CharField(max_length=1000, null=True)
     subject = models.CharField(max_length=100, null=True)
     resource = models.CharField(max_length=100, null=True)
+    link = models.URLField(null = True)
 
 
 class Tone(models.Model):
@@ -105,7 +107,7 @@ class Format(models.Model):
     name = models.CharField(max_length=90, null=True)
 
 class File(models.Model):
-    file = models.FileField(upload_to='files')
+    file = models.ImageField(upload_to='files')
     def get_image(self):
         if not self.file:
             return ''

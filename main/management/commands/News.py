@@ -55,7 +55,7 @@ def get_news_gpt():
             
             for item in models.NewsIntrest.objects.all():
                 try:
-                    prompt = f"full news related to {item.subject} from context with pic,description and title  as only a json with data field with a list of dics"
+                    prompt = f"full news related to {item.subject} from context with link,description and title  as only a json with data field with a list of dics"
                     storage_context = StorageContext.from_defaults(persist_dir='/Analyzer/done')
                     index = load_index_from_storage(storage_context)
                     response = index.as_query_engine().query(prompt)
@@ -77,10 +77,10 @@ def get_news_gpt():
                                         user= item.user,
                                         title=itemm["title"],
                                         text=itemm["description"],
+                                        link=itemm["link"],
                                         subject=item.subject,
                                         resource=itemmm.name
                                 )
-                                    
                 except:
                     pass
         except:
