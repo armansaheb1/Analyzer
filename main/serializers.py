@@ -17,10 +17,8 @@ class ServiceSerializer(serializers.ModelSerializer):
             "variables", 
             "static_variables", 
             "price", 
-            "icon", 
             "icon_image", 
             "button_name",
-            "highlight",
             "color", 
             "category", 
             "get_image"
@@ -40,10 +38,8 @@ class UserServiceSerializer(serializers.ModelSerializer):
             "variables", 
             "static_variables", 
             "price", 
-            "icon", 
             "icon_image", 
             "button_name",
-            "highlight",
             "color", 
             "category", 
             "get_image"
@@ -51,10 +47,38 @@ class UserServiceSerializer(serializers.ModelSerializer):
 
 
 class NewsServiceSerializer(serializers.ModelSerializer):
+    get_image = serializers.SerializerMethodField('is_named_bar')
+
+    def is_named_bar(self, instance):
+        return instance.get_image()
     class Meta:
         depth = 2
         model = models.NewsService
         fields = "__all__"
+
+class NewsSubServiceSerializer(serializers.ModelSerializer):
+    get_image = serializers.SerializerMethodField('is_named_bar')
+
+    def is_named_bar(self, instance):
+        return instance.get_image()
+    class Meta:
+        depth = 2
+        model = models.NewsSubService
+        fields = "__all__"
+
+
+class OccasionServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        depth = 2
+        model = models.OccasionService
+        fields = (
+            "id",
+            "name",
+    "prompt",
+    "description",
+    "icon_image",
+    "get_image"
+        )
 
 
 class ImageServiceSerializer(serializers.ModelSerializer):
@@ -76,6 +100,12 @@ class IdeaStaticEntrySerializer(serializers.ModelSerializer):
         model = models.IdeaStaticEntry
         fields = "__all__"
 
+
+class OccasionSerializer(serializers.ModelSerializer):
+    class Meta:
+        depth = 2
+        model = models.Occasion
+        fields = "__all__"
 
 class StaticEntrySerializer(serializers.ModelSerializer):
     class Meta:
@@ -113,6 +143,22 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ("id", "name", "services", "template")
 
 
+class NewsCategorySerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        for item in representation['services']:
+            if not item['icon_image']:
+                item['get_image'] = ''
+            else:
+                item['get_image'] = settings.My_MEDIA_ROOT + item['icon_image']
+        representation['package_id'] = "custom value"
+        return representation
+    class Meta:
+        depth = 2
+        model = models.NewsCategory
+        fields = ("id", "name", "services", "template")
+
+
 class NewsReportSerializer(serializers.ModelSerializer):
     class Meta:
         depth = 2
@@ -123,6 +169,30 @@ class ToneSerializer(serializers.ModelSerializer):
     class Meta:
         depth = 2
         model = models.Tone
+        fields = "__all__"
+
+
+class FormatServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        depth = 2
+        model = models.FormatService
+        fields = "__all__"
+
+
+class NewsSiteSerializer(serializers.ModelSerializer):
+    get_image = serializers.SerializerMethodField('is_named_bar')
+
+    def is_named_bar(self, instance):
+        return instance.get_image()
+    class Meta:
+        depth = 2
+        model = models.NewsSite
+        fields = "__all__"
+
+class RebuildServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        depth = 2
+        model = models.RebuildService
         fields = "__all__"
 
 

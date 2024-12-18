@@ -1,7 +1,7 @@
 from pathlib import Path
 import os
 import environ
-My_MEDIA_ROOT="http://217.69.3.68"
+My_MEDIA_ROOT="https://www.mafapp.ir"
 env = environ.Env(
     # set casting, default value
     DEBUG=(bool, False)
@@ -52,7 +52,7 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 ROOT_URLCONF = "Analyzer.urls"
 
-CSRF_TRUSTED_ORIGINS = ["http://localhost:8080", "http://localhost", "http://217.69.3.68/"]
+CSRF_TRUSTED_ORIGINS = ["http://localhost:8080", "http://localhost", "http://217.69.3.68"]
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",

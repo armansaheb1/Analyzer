@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from . import models
 from . import serializers
 import urllib.request
+from urllib.request import urlopen
 import json
 import time
 import google.generativeai as genai
@@ -18,7 +19,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 import sys
 import threading
 import time
-
+import requests
 from openai import OpenAI
 # from langchain_community.document_loaders import AsyncHtmlLoader, RSSFeedLoader
 # from llama_index.core import SimpleDirectoryReader, GPTVectorStoreIndex, StorageContext, load_index_from_storage
@@ -28,66 +29,32 @@ from openai import OpenAI
 # from llama_index.llms.openai import OpenAI
 # from llama_index.core import Settings
 from Analyzer import settings
-
+from langchain_community.document_loaders import WebBaseLoader
 genai.configure(api_key = settings.GEMINI_KEY)
 
 model = genai.GenerativeModel("gemini-1.5-flash")
 
+
+def newser(ids, modeled):
+    modeled = models.NewsResult.objects.get(id = modeled)
+    
+    service = models.NewsService.objects.get(id=ids)
+    loader = WebBaseLoader(
+        web_path = service.category.url
+    )
+
+    prompt = service.prompt
+    prompt = prompt.replace(
+        "$link", f"متن اصلی : {str(loader.load())}"
+    )
+    prompt = prompt + '\n اخبار به دست آمده را به صورت فقط یک لیست جیسون بدون اضافات و توضیحات ارایه کن . هر آیتم لیست باید دارای دو فیلد title , text  باشد . دقت کن که تیتر کوتاه و متن بلند باشد ولی از ۲۰۰ کاراکتر بیشتر نشود\n'
+    response = model.generate_content(prompt)
+    modeled.json = json.loads(response.text.replace('json', '').replace('```', '').replace('```', ''))
+    print(modeled)
+    modeled.save()
+
 def get_social(subject):
     pass
-
-# def get_news_gpt(subject, user):
-#     Settings.llm = OpenAI(model="gpt-4o")
-#     Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
-#     Settings.node_parser = SentenceSplitter(chunk_size=512, chunk_overlap=20)
-#     Settings.num_output = 512
-#     Settings.context_window = 3900
-#     Settings.chunk_size = 2048
-#     for itemmm in models.NewsSite.objects.all().order_by("id"):
-        
-#         documents = str(RSSFeedLoader(urls=[itemmm.url]).load(
-            
-#         ))
-#         with open("/Analyzer/input/copy.txt", 'r+') as f:
-#             f.write(documents)
-#             f.truncate()     
-#         documents = SimpleDirectoryReader('/Analyzer/input').load_data()
-#         index = GPTVectorStoreIndex.from_documents(
-#             documents
-#         )
-        
-#         index.storage_context.persist(persist_dir='/Analyzer/done')
-
-#         try:
-#             prompt = f"full news related to {subject} from context with pic,description and title  as only a json with data field with a list of dics"
-#             storage_context = StorageContext.from_defaults(persist_dir='/Analyzer/done')
-#             index = load_index_from_storage(storage_context)
-#             response = index.as_query_engine().query(prompt)
-
-#             response = response.response
-            
-
-            
-#             response = response.replace("```json", "").replace("```", "")
-#             # print(response)
-#             response = json.loads(response)
-#             response = response['data']
-#             for itemm in response:
-#                 if "title" in itemm and "description" in itemm :
-#                     if len(itemm["description"]) > 80:
-                
-#                         models.NewsReport.objects.create(
-#                             user= user,
-#                             title=itemm["title"],
-#                             text=itemm["description"],
-#                             subject=subject,
-#                             resource=itemmm.name
-#                     )
-                                
-#         except:
-#             pass
-
-
 
 
 def get_news(subject):
@@ -117,10 +84,29 @@ def get_news(subject):
                     subject=subject,
                 )
 
+
+class NewsSites(APIView):
+    def get(self, request):
+        query = models.NewsSite.objects.all()
+        serializer = serializers.NewsSiteSerializer(query, many=True)
+        return Response(serializer.data)
+
+
 class Categories(APIView):
     def get(self, request):
         query = models.Category.objects.all()
         serializer = serializers.CategorySerializer(query, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, id):
+        query = models.Category.objects.filter(template = 3)
+        serializer = serializers.CategorySerializer(query, many=True)
+        return Response(serializer.data)
+
+class NewsCategories(APIView):
+    def get(self, request):
+        query = models.NewsService.objects.all()
+        serializer = serializers.NewsServiceSerializer(query, many=True)
         return Response(serializer.data)
 
 
@@ -136,12 +122,37 @@ class Services(APIView):
         query = models.Service.objects.all()
         serializer = serializers.UserServiceSerializer(query, many=True)
         return Response(serializer.data)
+    
+class FormatServices(APIView):
+    def get(self, request):
+        query = models.FormatService.objects.all()
+        serializer = serializers.FormatServiceSerializer(query, many=True)
+        return Response(serializer.data)
+    
+class RebuildServices(APIView):
+    def get(self, request):
+        query = models.RebuildService.objects.all()
+        serializer = serializers.RebuildServiceSerializer(query, many=True)
+        return Response(serializer.data)
+
+
+class OccasionServices(APIView):
+    def get(self, request):
+        query = models.OccasionService.objects.all()
+        serializer = serializers.OccasionServiceSerializer(query, many=True)
+        return Response(serializer.data)
 
 
 class NewsServices(APIView):
     def get(self, request):
         query = models.NewsService.objects.all().order_by('-id')
         serializer = serializers.NewsServiceSerializer(query, many=True)
+        return Response(serializer.data)
+
+class NewsSubServices(APIView):
+    def get(self, request):
+        query = models.NewsSubService.objects.all().order_by('-id')
+        serializer = serializers.NewsSubServiceSerializer(query, many=True)
         return Response(serializer.data)
     
 
@@ -272,10 +283,13 @@ class GBuilder(APIView):
 
         query = models.Service.objects.get(slug=slug)
         prompt = query.prompt
-        prompt = prompt + '\n return result as only a responsive html text without pictures and code details with maximum header of h4 \n'
+        prompt = prompt + "\n به فرمت h6,b,p تبدیل کن. اطمینان حاصل کن که متن به پاراگراف‌های مناسب با تگ‌های <p> تقسیم شده و برای تمام عناوین از تگ <h6> استفاده شود و تمام تگ ها justify باشد. برای جدا تمام کردن پاراگراف‌ها و هدر ها از تگ <br> استفاده کن.\n"
         for item in query.static_variables.all():
             if request.data["data2"]['n' + str(item.id)]:
                 prompt = prompt + '\n' + item.prompt.replace('$entry', request.data["data2"]['n' + str(item.id)])
+        for item in query.variables:
+            prompt = prompt.replace('$' + item["slug"], request.data["data"][item["slug"]])
+        
         prompt = prompt + '\n متن اصلی : \n' + request.data["maintext"]
         
         logger.info(prompt)
@@ -291,7 +305,7 @@ class GBuilderWrite(APIView):
         logger = logging.getLogger('django')
         query = models.StaticEntry.objects.all()
 
-        prompt = '\n return result as only a responsive html text without pictures and code details with maximum header of h4 \n'
+        prompt = "\n به فرمت h6,b,p تبدیل کن. اطمینان حاصل کن که متن به پاراگراف‌های مناسب با تگ‌های <p> تقسیم شده و برای تمام عناوین از تگ <h6> استفاده شود و تمام تگ ها justify باشد. برای جدا تمام کردن پاراگراف‌ها و هدر ها از تگ <br> استفاده کن.\n"
         for item in query:
             if request.data["data2"]['n' + str(item.id)]:
                 prompt = prompt + '\n' + item.prompt.replace('$entry', request.data["data2"]['n' + str(item.id)])
@@ -301,28 +315,101 @@ class GBuilderWrite(APIView):
         response = model.generate_content(prompt)
         return Response(response.text)
 
+class GBuilderRebuild(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        query = models.RebuildService.objects.get(id = id)
+
+        prompt = "\n به فرمت h6,b,p تبدیل کن. اطمینان حاصل کن که متن به پاراگراف‌های مناسب با تگ‌های <p> تقسیم شده و برای تمام عناوین از تگ <h6> استفاده شود و تمام تگ ها justify باشد. برای جدا تمام کردن پاراگراف‌ها و هدر ها از تگ <br> استفاده کن.\n"
+        prompt = prompt + query.prompt
+        prompt = prompt + '\n متن اصلی : \n' + request.data["text"]
+        
+        response = model.generate_content(prompt)
+        return Response(response.text.replace('```html','').replace('```',''))
+
+class GBuilderFormat(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        query = models.RebuildService.objects.get(id = id)
+
+        prompt = "\n به فرمت h6,b,p تبدیل کن. اطمینان حاصل کن که متن به پاراگراف‌های مناسب با تگ‌های <p> تقسیم شده و برای تمام عناوین از تگ <h6> استفاده شود و تمام تگ ها justify باشد. برای جدا تمام کردن پاراگراف‌ها و هدر ها از تگ <br> استفاده کن.\n"
+        prompt = prompt + query.prompt
+        prompt = prompt + '\n متن اصلی : \n' + request.data["text"]
+        
+        response = model.generate_content(prompt)
+        return Response(response.text.replace('```html','').replace('```',''))
 
 class GBuilderNews(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, id, service):
-        query = models.NewsReport.objects.get(id=id)
-        service = models.NewsService.objects.get(id=service)
-        text = ''
-        from langchain_community.document_loaders import WebBaseLoader
+    def put(self, request):
+        result = {}
+        service = models.NewsService.objects.get(id = request.data['subject'])
+        sub =  models.NewsSubService.objects.get(id = request.data['sub'])
+        genai.configure(api_key = settings.GEMINI_KEY)
 
-        loader = WebBaseLoader(
-            web_path = query.link
-        )
-        
-        prompt = service.prompt
-        prompt = prompt + '\n Response should be with html text formatting with maximum header of h4'
-        prompt = prompt.replace(
-            "$text", f"content related to {query.title} from  {str(loader.load())}"
-        )
-        prompt = prompt + '\n return result as only a responsive html text without pictures and code details with maximum header of h4 \n'
-        response = model.generate_content(prompt)
-        return Response(response.text.replace('```html', '').replace('```', ''))
+        model = genai.GenerativeModel("gemini-1.5-flash")
+
+        for item in request.data['sources']:
+            site = models.NewsSite.objects.get(id = item)
+            # link = models.NewsLink.objects.get(site= site, service=service)
+            # if not site.json:
+            #     result[service.id] = {}
+            #     site.json = {}
+            #     loader = WebBaseLoader(
+            #             web_path = link.url
+            #         )
+            #     prompt = service.prompt
+            #     prompt = prompt + sub.prompt
+                
+            #     prompt = prompt + '\n اخبار به دست آمده را به صورت فقط یک لیست جیسون بدون اضافات و توضیحات ارایه کن . هر آیتم لیست باید دارای دو فیلد title , text  باشد . دقت کن که تیتر کوتاه و متن بلند باشد ولی از ۲۰۰ کاراکتر بیشتر نشود\n'
+
+            #     prompt = prompt + f"متن اصلی : {str(loader.load())}"
+            #     response = model.generate_content(prompt).text.replace('json', '').replace('```', '').replace('```', '')
+            #     response = json.loads(response)
+            #     site.json[service.id] = {sub.id : response}  
+            #     site.save()
+            # elif not str(service.id) in site.json:
+            #     loader = WebBaseLoader(
+            #             web_path = link.url
+            #         )
+            #     prompt = service.prompt
+            #     prompt = prompt + sub.prompt
+                
+            #     prompt = prompt + '\n اخبار به دست آمده را به صورت فقط یک لیست جیسون بدون اضافات و توضیحات ارایه کن . هر آیتم لیست باید دارای دو فیلد title , text  باشد . دقت کن که تیتر کوتاه و متن بلند باشد ولی از ۲۰۰ کاراکتر بیشتر نشود\n'
+
+            #     prompt = prompt + f"متن اصلی : {str(loader.load())}"
+            #     response = model.generate_content(prompt).text.replace('json', '').replace('```', '').replace('```', '')
+            #     response = json.loads(response)
+            #     site.json[service.id] = {sub.id : response}  
+            #     site.save()
+            # elif not str(sub.id) in site.json[str(service.id)]:
+            #     loader = WebBaseLoader(
+            #             web_path = site.url
+            #         )
+            #     prompt = service.prompt
+            #     prompt = prompt + sub.prompt
+                
+            #     prompt = prompt + '\n اخبار به دست آمده را به صورت فقط یک لیست جیسون بدون اضافات و توضیحات ارایه کن . هر آیتم لیست باید دارای دو فیلد title , text  باشد . دقت کن که تیتر کوتاه و متن بلند باشد ولی از ۲۰۰ کاراکتر بیشتر نشود\n'
+
+            #     prompt = prompt + f"متن اصلی : {str(loader.load())}"
+            #     response = model.generate_content(prompt).text.replace('json', '').replace('```', '').replace('```', '')
+            #     response = json.loads(response)
+            #     site.json[service.id][sub.id] = response
+            #     site.save()
+            result[site.name] = site.json[str(service.id)][str(sub.id)]
+        model = models.NewsResult.objects.create(text = '', json = result)
+        return Response(model.id)
+    
+    def post(self, request, ids):
+        query = models.NewsResult.objects.get(id =ids)
+        if query.json != None:
+            return Response({'news': query.json, 'id': query.id})
+        elif query.text:
+            return Response({'text': query.text, 'id': query.id})
+        return Response(status = 400)
 
 class GBuilderFile(APIView):
     permission_classes = [IsAuthenticated]
@@ -332,7 +419,7 @@ class GBuilderFile(APIView):
         client = OpenAI(api_key= settings.OPEN_AI_KEY)
         # file = client.files.create( file=open(request.data["file"], "rb"), purpose="fine-tune" ) 
         completion = client.chat.completions.create( model="gpt-4o",
-        messages=[ {"role": "system", "content": "You are a helpful assistant that can read Files."}, 
+        messages=[ {"role": "system", "content": "You are a helpful assistant that can read image Files and only extract the text inside it and return error in persian if it's not any text in image. به فرمت h6,b,p تبدیل کن. اطمینان حاصل کن که متن به پاراگراف‌های مناسب با تگ‌های <p> تقسیم شده و برای تمام عناوین از تگ <h6> استفاده شود و تمام تگ ها justify باشد. برای جدا تمام کردن پاراگراف‌ها و هدر ها از تگ <br> استفاده کن."}, 
                     { "role": "user", "content": [
                         {
                         "type": "image_url",
@@ -353,7 +440,7 @@ class GBuilderFileManual(APIView):
         client = OpenAI(api_key= settings.OPEN_AI_KEY)
         # file = client.files.create( file=open(request.data["file"], "rb"), purpose="fine-tune" ) 
         completion = client.chat.completions.create( model="gpt-4o",
-        messages=[ {"role": "system", "content": "You are a helpful assistant that can read Files."}, 
+        messages=[ {"role": "system", "content": " .\n"}, 
                     { "role": "user", "content": [
                         {
                         "type": "image_url",
@@ -375,12 +462,12 @@ class GBuilderIdea(APIView):
     def post(self, request):
         import logging
         logger = logging.getLogger('django')
-        prompt = f'\n return only a json list with title and description with article ideas for {request.data["maintext"]}'
+        prompt = f'\n return only a json list with title and description with 3 article ideas for {request.data["maintext"]} all in persian'
         logger.info(prompt + '\n')
 
-        for item in models.IdeaStaticEntry.objects.all():
-            if request.data["data"]['n' + str(item.id)]:
-                prompt = prompt + '\n' + item.prompt.replace('$entry', str(request.data["data"]['n' + str(item.id)]))
+        # for item in models.IdeaStaticEntry.objects.all():
+        #     if request.data["data"]['n' + str(item.id)]:
+        #         prompt = prompt + '\n' + item.prompt.replace('$entry', str(request.data["data"]['n' + str(item.id)]))
 
         
         response = model.generate_content(prompt)
@@ -395,3 +482,27 @@ class Uploader(APIView):
         if serializer.is_valid():
             serializer.save()
         return Response(serializer.data)
+
+
+class Occasions(APIView):
+    def post(self, request):
+        date = str(request.data['date'].replace('/','').replace('/','')).replace('/','')
+        r = urlopen(f'https://persianholiday.site/api/v1/day?date={date}')
+        # r = json.loads(r)
+        return Response(json.loads(r.read().decode('utf-8')))
+
+
+
+class OccasionBuilder(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, sid):
+        modeled = models.NewsResult.objects.create(text = '')
+        service = models.OccasionService.objects.get(id=sid)
+        prompt = service.prompt
+        prompt = prompt + '\n' + 'مناسبت:' + request.data['text']
+        prompt =  prompt + "\n به فرمت h6,b,p تبدیل کن. اطمینان حاصل کن که متن به پاراگراف‌های مناسب با تگ‌های <p> تقسیم شده و برای تمام عناوین از تگ <h6> استفاده شود و تمام تگ ها justify باشد. برای جدا تمام کردن پاراگراف‌ها و هدر ها از تگ <br> استفاده کن.\n"
+        description = model.generate_content(prompt).text
+        modeled.text= description.replace('```html', '').replace('```', '')
+        modeled.save()
+        return Response(modeled.id)
